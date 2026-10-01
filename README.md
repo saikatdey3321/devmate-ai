@@ -29,3 +29,22 @@ Building an AI agent from scratch while learning Agentic AI.
 - Day 4: Persistent memory
 - Day 5: File handling
 - Day 6 onwards: RAG, tools, agents and LangGraph
+
+
+
+## Day 2: Interactive Chatbot
+
+### Features
+- Continuous conversation loop
+- Greeting and help commands
+- Empty input validation
+- Exit command
+- Offline demo mode
+- Error handling for AI requests
+
+### Learning
+- Python functions
+- While loops
+- Conditional statements
+- Break and continue
+- Exception handling
