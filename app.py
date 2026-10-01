@@ -1,7 +1,9 @@
 
+import json
 import os
 import re
 
+from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -10,70 +12,88 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key) if api_key else None
 
-conversation_history = []
+MEMORY_FILE = Path(__file__).with_name("memory.json")
 MAX_HISTORY_MESSAGES = 10
+conversation_history = []
 
 
-def extract_name(text: str) -> str | None:
-    """Extract a name from a statement such as 'My name is Saikat Dey'."""
+def load_memories():
+    """Load saved memories from memory.json."""
+    try:
+        with MEMORY_FILE.open("r", encoding="utf-8") as file:
+            data = json.load(file)
+
+        if isinstance(data, dict) and isinstance(data.get("memories"), list):
+            return data["memories"]
+
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+
+    return []
+
+
+def save_memories(memories):
+    """Save memories to memory.json."""
+    with MEMORY_FILE.open("w", encoding="utf-8") as file:
+        json.dump({"memories": memories}, file, indent=2)
+
+
+persistent_memories = load_memories()
+
+
+def extract_name(text):
+    """Extract a name from 'my name is ...'."""
     match = re.search(r"\bmy name is\s+(.+)", text, re.IGNORECASE)
 
     if not match:
         return None
 
-    # Stop at punctuation or a follow-up phrase.
     candidate = re.split(
-        r"[,.;!?]|\bthen\b|\band\s+what\b|\bwhat\s+is\b",
+        r"[,.;!?]|\bthen\b|\bwhat is\b",
         match.group(1),
         maxsplit=1,
         flags=re.IGNORECASE,
     )[0].strip()
 
-    # Keep at most two name parts for this beginner demo.
     parts = candidate.split()[:2]
     name = " ".join(parts).strip(" '-")
 
-    if not name or not re.fullmatch(r"[A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*)?", name):
-        return None
-
-    return name
-
-
-def remember(role: str, content: str) -> None:
-    """Store messages while keeping complete user-assistant pairs."""
-    conversation_history.append({
-        "role": role,
-        "content": content,
-    })
-
-    if len(conversation_history) > MAX_HISTORY_MESSAGES:
-        # Remove complete old pairs, not individual messages.
-        del conversation_history[:2]
-
-
-def find_remembered_name() -> str | None:
-    """Find the most recent name statement in earlier user messages."""
-    for message in reversed(conversation_history[:-1]):
-        if message["role"] == "user":
-            name = extract_name(message["content"])
-
-            if name:
-                return name
+    if re.fullmatch(
+        r"[A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*)?",
+        name,
+    ):
+        return name
 
     return None
 
 
-def ask_ai(question: str) -> str:
-    """Answer using offline demo rules or the OpenAI API."""
+def remember(role, content):
+    """Keep the most recent conversation messages."""
+    conversation_history.append({"role": role, "content": content})
 
+    if len(conversation_history) > MAX_HISTORY_MESSAGES:
+        del conversation_history[:2]
+
+
+def find_remembered_name():
+    """Find the saved name in persistent memory."""
+    for memory in reversed(persistent_memories):
+        if memory.get("type") == "name":
+            return memory.get("value")
+
+    return None
+
+
+def ask_ai(question):
+    """Answer using the API or offline demo."""
     if client is not None:
         response = client.responses.create(
             model="gpt-4.1-mini",
             instructions=(
                 "You are DevMate AI, a helpful programming tutor. "
-                "Use the recent conversation history to answer follow-up "
-                "questions. Do not claim to remember information that is "
-                "not present in the supplied history."
+                "Use the conversation history and saved memories below "
+                "when relevant. Do not invent personal details.\n"
+                f"Saved memories: {json.dumps(persistent_memories)}"
             ),
             input=conversation_history,
         )
@@ -81,14 +101,8 @@ def ask_ai(question: str) -> str:
 
     question_lower = question.lower()
 
-    # Support a name statement and question in the same input.
     if "my name" in question_lower:
-        name = extract_name(question)
-
-        if name:
-            return f"Your name is {name}."
-
-        name = find_remembered_name()
+        name = extract_name(question) or find_remembered_name()
 
         if name:
             return f"Your name is {name}."
@@ -106,15 +120,14 @@ def ask_ai(question: str) -> str:
 
     return (
         "I'm running in offline demo mode. "
-        "I can recognize names and remember recent messages in this session."
+        "I can remember your saved name across sessions."
     )
 
 
-def main() -> None:
+def main():
     print("=" * 40)
     print("Welcome to DevMate AI!")
     print("Mode:", "AI" if client else "Offline demo")
-    print("Memory limit:", MAX_HISTORY_MESSAGES, "messages")
     print("Commands: help, memory, clear, exit")
     print("=" * 40)
 
@@ -137,32 +150,46 @@ def main() -> None:
 
         if command == "help":
             print(
-                "DevMate AI: Ask a question, type 'memory' to inspect "
-                "memory, 'clear' to reset it, or 'exit' to quit."
+                "Ask a question, type 'memory' to view saved memories, "
+                "'clear' to reset session history, or 'exit' to quit."
             )
             continue
 
         if command == "memory":
+            print("DevMate AI: Saved memories:", persistent_memories)
             print(
-                f"DevMate AI: Stored {len(conversation_history)} "
-                f"of {MAX_HISTORY_MESSAGES} allowed messages."
+                f"Session history: {len(conversation_history)} "
+                f"of {MAX_HISTORY_MESSAGES} messages."
             )
             continue
 
         if command == "clear":
             conversation_history.clear()
-            print("DevMate AI: Conversation memory cleared.")
+            print("DevMate AI: Session history cleared.")
             continue
 
         remember("user", question)
 
         try:
+            name = extract_name(question)
+
+            if name:
+                persistent_memories[:] = [
+                    memory
+                    for memory in persistent_memories
+                    if memory.get("type") != "name"
+                ]
+                persistent_memories.append({
+                    "type": "name",
+                    "value": name,
+                })
+                save_memories(persistent_memories)
+
             answer = ask_ai(question)
             remember("assistant", answer)
             print("DevMate AI:", answer)
 
         except Exception as error:
-            # Remove the failed user message.
             conversation_history.pop()
             print(f"Request failed: {error}")
 

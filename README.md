@@ -67,3 +67,17 @@ Building an AI agent from scratch while learning Agentic AI.
 - Clearing session state
 - Context handling for AI applications
 
+
+## Day 5 — Persistent Memory
+
+- Added persistent memory using a local JSON file.
+- Saved the user's name to `memory.json`.
+- Loaded saved memories when the application starts.
+- Enabled name recall after restarting the application.
+- Added a command to inspect saved memories.
+- Kept session history separate from persistent memory.
+- Tested the feature in offline demo mode.
+
+
+
+
