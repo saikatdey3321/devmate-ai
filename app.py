@@ -1,49 +1,7 @@
-# import os
-# from dotenv import load_dotenv
-# from openai import OpenAI
-
-# load_dotenv()
-
-# api_key = os.getenv("OPENAI_API_KEY")
-
-# if not api_key:
-#     raise ValueError("API key missing. Check your .env file.")
-
-# client = OpenAI(api_key=api_key)
-
-
-# def ask_ai(question: str) -> str:
-#     response = client.responses.create(
-#         model="gpt-4.1-mini",
-#         instructions="You are DevMate AI, a helpful programming tutor.",
-#         input=question,
-#     )
-#     return response.output_text
-
-
-# def main():
-#     print("Welcome to DevMate AI!")
-#     question = input("Ask your question: ").strip()
-
-#     if not question:
-#         print("Please enter a question.")
-#         return
-
-#     try:
-#         print("\nDevMate AI:", ask_ai(question))
-#     except Exception as error:
-#         print(f"Request failed: {error}")
-
-
-# if __name__ == "__main__":
-#     main()
-
-
-
-
-
 
 import os
+import re
+
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -53,46 +11,119 @@ api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key) if api_key else None
 
 conversation_history = []
+MAX_HISTORY_MESSAGES = 10
+
+
+def extract_name(text: str) -> str | None:
+    """Extract a name from a statement such as 'My name is Saikat Dey'."""
+    match = re.search(r"\bmy name is\s+(.+)", text, re.IGNORECASE)
+
+    if not match:
+        return None
+
+    # Stop at punctuation or a follow-up phrase.
+    candidate = re.split(
+        r"[,.;!?]|\bthen\b|\band\s+what\b|\bwhat\s+is\b",
+        match.group(1),
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0].strip()
+
+    # Keep at most two name parts for this beginner demo.
+    parts = candidate.split()[:2]
+    name = " ".join(parts).strip(" '-")
+
+    if not name or not re.fullmatch(r"[A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*)?", name):
+        return None
+
+    return name
+
+
+def remember(role: str, content: str) -> None:
+    """Store messages while keeping complete user-assistant pairs."""
+    conversation_history.append({
+        "role": role,
+        "content": content,
+    })
+
+    if len(conversation_history) > MAX_HISTORY_MESSAGES:
+        # Remove complete old pairs, not individual messages.
+        del conversation_history[:2]
+
+
+def find_remembered_name() -> str | None:
+    """Find the most recent name statement in earlier user messages."""
+    for message in reversed(conversation_history[:-1]):
+        if message["role"] == "user":
+            name = extract_name(message["content"])
+
+            if name:
+                return name
+
+    return None
 
 
 def ask_ai(question: str) -> str:
-    """Answer using offline demo mode or the AI API."""
+    """Answer using offline demo rules or the OpenAI API."""
 
-    if client is None:
-        question_lower = question.lower()
+    if client is not None:
+        response = client.responses.create(
+            model="gpt-4.1-mini",
+            instructions=(
+                "You are DevMate AI, a helpful programming tutor. "
+                "Use the recent conversation history to answer follow-up "
+                "questions. Do not claim to remember information that is "
+                "not present in the supplied history."
+            ),
+            input=conversation_history,
+        )
+        return response.output_text
 
-        if "hello" in question_lower or question_lower == "hi":
-            return "Hello! I'm DevMate AI. How can I help you?"
+    question_lower = question.lower()
 
-        if "python" in question_lower:
-            return "Python is a programming language used in AI, automation, and web development."
+    # Support a name statement and question in the same input.
+    if "my name" in question_lower:
+        name = extract_name(question)
 
-        if "my name" in question_lower:
-            for message in reversed(conversation_history):
-                if message["role"] == "user" and "my name is" in message["content"].lower():
-                    return "Your name is " + message["content"].split("is", 1)[1].strip().rstrip(".") + "."
+        if name:
+            return f"Your name is {name}."
 
-            return "You haven't told me your name yet."
+        name = find_remembered_name()
 
-        return "I'm running in offline demo mode. I can remember messages in this session."
+        if name:
+            return f"Your name is {name}."
 
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        instructions="You are DevMate AI, a helpful programming tutor. Use the conversation history to answer follow-up questions.",
-        input=conversation_history + [{"role": "user", "content": question}],
+        return "You haven't told me your name yet."
+
+    if "hello" in question_lower or question_lower == "hi":
+        return "Hello! I'm DevMate AI. How can I help you?"
+
+    if "python" in question_lower:
+        return (
+            "Python is a programming language used in AI, "
+            "automation, and web development."
+        )
+
+    return (
+        "I'm running in offline demo mode. "
+        "I can recognize names and remember recent messages in this session."
     )
-    return response.output_text
 
 
-def main():
+def main() -> None:
     print("=" * 40)
     print("Welcome to DevMate AI!")
     print("Mode:", "AI" if client else "Offline demo")
-    print("Type 'help' for help, 'clear' to reset memory, or 'exit' to quit.")
+    print("Memory limit:", MAX_HISTORY_MESSAGES, "messages")
+    print("Commands: help, memory, clear, exit")
     print("=" * 40)
 
     while True:
-        question = input("\nYou: ").strip()
+        try:
+            question = input("\nYou: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nDevMate AI: Goodbye! Keep learning.")
+            break
 
         if not question:
             print("DevMate AI: Please enter a question.")
@@ -105,7 +136,17 @@ def main():
             break
 
         if command == "help":
-            print("DevMate AI: Ask questions, use 'clear' to reset memory, or 'exit' to quit.")
+            print(
+                "DevMate AI: Ask a question, type 'memory' to inspect "
+                "memory, 'clear' to reset it, or 'exit' to quit."
+            )
+            continue
+
+        if command == "memory":
+            print(
+                f"DevMate AI: Stored {len(conversation_history)} "
+                f"of {MAX_HISTORY_MESSAGES} allowed messages."
+            )
             continue
 
         if command == "clear":
@@ -113,13 +154,15 @@ def main():
             print("DevMate AI: Conversation memory cleared.")
             continue
 
-        conversation_history.append({"role": "user", "content": question})
+        remember("user", question)
 
         try:
             answer = ask_ai(question)
-            conversation_history.append({"role": "assistant", "content": answer})
+            remember("assistant", answer)
             print("DevMate AI:", answer)
+
         except Exception as error:
+            # Remove the failed user message.
             conversation_history.pop()
             print(f"Request failed: {error}")
 
