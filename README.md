@@ -1,0 +1,31 @@
+# DevMate AI
+
+Building an AI agent from scratch while learning Agentic AI.
+
+## Day 1: Project Foundation
+
+### Features
+- Python project setup
+- OpenAI API integration code
+- Environment variable configuration
+- Basic question-answer workflow
+
+## Tech Stack
+- Python
+- OpenAI API
+- python-dotenv
+
+## Current Status
+- [x] Environment setup
+- [x] Dependencies installed
+- [x] Initial application code written
+- [ ] API connection tested
+- [ ] GitHub repository published
+
+## Learning Roadmap
+- Day 1: Basic LLM application
+- Day 2: Interactive chatbot
+- Day 3: Conversation history
+- Day 4: Persistent memory
+- Day 5: File handling
+- Day 6 onwards: RAG, tools, agents and LangGraph
