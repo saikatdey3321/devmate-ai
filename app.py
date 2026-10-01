@@ -52,31 +52,34 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key) if api_key else None
 
+conversation_history = []
+
 
 def ask_ai(question: str) -> str:
-    """Answer a question using AI or offline demo mode."""
+    """Answer using offline demo mode or the AI API."""
 
     if client is None:
         question_lower = question.lower()
 
-        if "hello" in question_lower or "hi" == question_lower:
+        if "hello" in question_lower or question_lower == "hi":
             return "Hello! I'm DevMate AI. How can I help you?"
 
         if "python" in question_lower:
             return "Python is a programming language used in AI, automation, and web development."
 
-        if "help" in question_lower:
-            return "Ask me about Python, or type 'exit' to quit."
+        if "my name" in question_lower:
+            for message in reversed(conversation_history):
+                if message["role"] == "user" and "my name is" in message["content"].lower():
+                    return "Your name is " + message["content"].split("is", 1)[1].strip().rstrip(".") + "."
 
-        return (
-            "I'm running in offline demo mode. "
-            "AI answers will be enabled when we configure the API key."
-        )
+            return "You haven't told me your name yet."
+
+        return "I'm running in offline demo mode. I can remember messages in this session."
 
     response = client.responses.create(
         model="gpt-4.1-mini",
-        instructions="You are DevMate AI, a helpful programming tutor.",
-        input=question,
+        instructions="You are DevMate AI, a helpful programming tutor. Use the conversation history to answer follow-up questions.",
+        input=conversation_history + [{"role": "user", "content": question}],
     )
     return response.output_text
 
@@ -85,7 +88,7 @@ def main():
     print("=" * 40)
     print("Welcome to DevMate AI!")
     print("Mode:", "AI" if client else "Offline demo")
-    print("Type 'help' for help or 'exit' to quit.")
+    print("Type 'help' for help, 'clear' to reset memory, or 'exit' to quit.")
     print("=" * 40)
 
     while True:
@@ -95,17 +98,29 @@ def main():
             print("DevMate AI: Please enter a question.")
             continue
 
-        if question.lower() in ("exit", "quit"):
+        command = question.lower()
+
+        if command in ("exit", "quit"):
             print("DevMate AI: Goodbye! Keep learning.")
             break
 
-        if question.lower() == "help":
-            print("DevMate AI:", ask_ai("help"))
+        if command == "help":
+            print("DevMate AI: Ask questions, use 'clear' to reset memory, or 'exit' to quit.")
             continue
 
+        if command == "clear":
+            conversation_history.clear()
+            print("DevMate AI: Conversation memory cleared.")
+            continue
+
+        conversation_history.append({"role": "user", "content": question})
+
         try:
-            print("DevMate AI:", ask_ai(question))
+            answer = ask_ai(question)
+            conversation_history.append({"role": "assistant", "content": answer})
+            print("DevMate AI:", answer)
         except Exception as error:
+            conversation_history.pop()
             print(f"Request failed: {error}")
 
 

@@ -48,3 +48,22 @@ Building an AI agent from scratch while learning Agentic AI.
 - Conditional statements
 - Break and continue
 - Exception handling
+
+
+
+## Day 3: Conversation History and Session Memory
+
+### Features
+- Stores conversation messages during the current session
+- Answers name-related questions using stored messages
+- Clear command to reset conversation memory
+- Follow-up question support
+- Offline demo mode maintained
+
+### Learning
+- Python lists and dictionaries
+- Conversation history management
+- Reverse iteration
+- Clearing session state
+- Context handling for AI applications
+
