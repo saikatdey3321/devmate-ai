@@ -3,6 +3,10 @@
     {
       "type": "name",
       "value": "Saikat Dey"
+    },
+    {
+      "type": "fact",
+      "value": "my favorite language is Python"
     }
   ]
 }

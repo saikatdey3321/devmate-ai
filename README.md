@@ -79,5 +79,17 @@ Building an AI agent from scratch while learning Agentic AI.
 - Tested the feature in offline demo mode.
 
 
+## Day 6 — Custom Persistent Memory
+
+- Added a custom `remember` command for saving personal facts.
+- Added persistent storage for custom memories using `memory.json`.
+- Preserved existing name memory functionality.
+- Added memory retrieval for saved facts.
+- Added favorite language memory retrieval.
+- Verified persistent memories survive application restarts.
+- Kept temporary conversation history separate from persistent memory.
+- Continued development in offline demo mode without requiring an OpenAI API key.
+
+
 
 
