@@ -286,6 +286,24 @@ def add_memory(memory_type, value):
 
     save_memories(persistent_memories)
 
+def forget_memory(keyword):
+    """Remove saved memories containing the given keyword."""
+    keyword = keyword.lower()
+
+    removed_memories = []
+
+    for memory in persistent_memories[:]:
+        value = str(memory.get("value", ""))
+
+        if keyword in value.lower():
+            removed_memories.append(memory)
+            persistent_memories.remove(memory)
+
+    if removed_memories:
+        save_memories(persistent_memories)
+
+    return removed_memories
+
 
 # -----------------------------
 # Name Memory
@@ -492,16 +510,18 @@ def main():
         # Custom Remember Command
         # -------------------------
 
+                # -------------------------
+        # Custom Remember Command
+        # -------------------------
+
         if command.startswith("remember "):
 
             fact = question[9:].strip()
 
             if not fact:
-
                 print(
                     "DevMate AI: Please tell me what to remember."
                 )
-
                 continue
 
             add_memory("fact", fact)
@@ -510,6 +530,36 @@ def main():
 
             continue
 
+        # -------------------------
+        # Forget Memory Command
+        # -------------------------
+
+        if command.startswith("forget "):
+
+            keyword = question[7:].strip()
+
+            if not keyword:
+                print(
+                    "DevMate AI: Please tell me what to forget."
+                )
+                continue
+
+            removed_memories = forget_memory(keyword)
+
+            if removed_memories:
+                print(
+                    f"DevMate AI: Removed {len(removed_memories)} memory."
+                )
+            else:
+                print(
+                    "DevMate AI: I couldn't find a matching memory."
+                )
+
+            continue
+
+       
+
+           
         # -------------------------
         # Memory Command
         # -------------------------
@@ -525,6 +575,22 @@ def main():
                 f"Session history: "
                 f"{len(conversation_history)} "
                 f"of {MAX_HISTORY_MESSAGES} messages."
+            )
+
+            continue
+
+
+                # -------------------------
+        # Clear Persistent Memory
+        # -------------------------
+
+        if command == "clear memory":
+
+            persistent_memories.clear()
+            save_memories(persistent_memories)
+
+            print(
+                "DevMate AI: All persistent memories cleared."
             )
 
             continue

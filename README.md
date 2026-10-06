@@ -90,6 +90,16 @@ Building an AI agent from scratch while learning Agentic AI.
 - Kept temporary conversation history separate from persistent memory.
 - Continued development in offline demo mode without requiring an OpenAI API key.
 
+## Day 7 — Memory Lifecycle Management
+
+- Added `forget <keyword>` command to remove matching persistent memories.
+- Added `clear memory` command to remove all persistent memories.
+- Preserved the existing `clear` command for temporary conversation history.
+- Added persistent memory deletion using `memory.json`.
+- Verified deleted memories remain deleted after application restart.
+- Added memory lifecycle management for creating, viewing, retrieving, and deleting memories.
+- Tested all memory commands in offline demo mode.
+
 
 
 
