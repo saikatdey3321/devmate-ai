@@ -228,6 +228,7 @@ import re
 from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
+from router import detect_intent
 
 
 # -----------------------------
@@ -480,13 +481,14 @@ def main():
             print("DevMate AI: Please enter a question.")
             continue
 
-        command = question.lower()
+        intent = detect_intent(question)
+        print(f"[Router] Intent: {intent}")
 
         # -------------------------
         # Exit
         # -------------------------
 
-        if command in ("exit", "quit"):
+        if intent == "exit":
 
             print("DevMate AI: Goodbye! Keep learning.")
             break
@@ -495,7 +497,7 @@ def main():
         # Help
         # -------------------------
 
-        if command == "help":
+        if intent == "help":
 
             print(
                 "Ask a question, type 'memory' to view saved memories, "
@@ -514,7 +516,7 @@ def main():
         # Custom Remember Command
         # -------------------------
 
-        if command.startswith("remember "):
+        if intent == "remember":
 
             fact = question[9:].strip()
 
@@ -534,7 +536,7 @@ def main():
         # Forget Memory Command
         # -------------------------
 
-        if command.startswith("forget "):
+        if intent == "forget":
 
             keyword = question[7:].strip()
 
@@ -564,7 +566,7 @@ def main():
         # Memory Command
         # -------------------------
 
-        if command == "memory":
+        if intent == "memory":
 
             print(
                 "DevMate AI: Saved memories:",
@@ -584,7 +586,7 @@ def main():
         # Clear Persistent Memory
         # -------------------------
 
-        if command == "clear memory":
+        if intent == "clear_memory":
 
             persistent_memories.clear()
             save_memories(persistent_memories)
@@ -599,7 +601,7 @@ def main():
         # Clear Session History
         # -------------------------
 
-        if command == "clear":
+        if intent == "clear":
 
             conversation_history.clear()
 

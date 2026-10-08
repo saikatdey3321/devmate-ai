@@ -101,5 +101,16 @@ Building an AI agent from scratch while learning Agentic AI.
 - Tested all memory commands in offline demo mode.
 
 
+## Day 8 — Intent Routing
+
+- Added a dedicated `router.py` module for intent detection.
+- Separated user intent detection from application command execution.
+- Added routing for `remember`, `forget`, `memory`, `clear`, `clear memory`, `help`, `exit`, and normal chat.
+- Connected the intent router to the main DevMate AI application.
+- Added router debug output to visualize detected intents.
+- Tested command routing without breaking existing memory functionality.
+- Continued development in offline demo mode without requiring an OpenAI API key.
+
+
 
 
