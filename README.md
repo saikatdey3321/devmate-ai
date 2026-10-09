@@ -112,5 +112,18 @@ Building an AI agent from scratch while learning Agentic AI.
 - Continued development in offline demo mode without requiring an OpenAI API key.
 
 
+## Day 9 — Reusable Tool System
+
+- Created a dedicated `tools.py` module for reusable memory operations.
+- Implemented `save_memory()` to save facts to persistent JSON storage.
+- Implemented `get_memories()` to retrieve saved memories.
+- Implemented `forget_memory()` to remove matching memories and persist the changes.
+- Integrated the memory tools with the command router in `app.py`.
+- Tested the remember, memory, and forget commands successfully in offline mode.
+- Verified Python syntax using `python -m py_compile app.py router.py tools.py`.
+
+**Key learning:** Modular tool design separates memory operations from the main application logic and makes the code easier to maintain and extend.
+
+
 
 

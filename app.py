@@ -229,6 +229,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 from router import detect_intent
+from tools import save_memory, get_memories, forget_memory as forget_memory_tool
 
 
 # -----------------------------
@@ -526,7 +527,12 @@ def main():
                 )
                 continue
 
-            add_memory("fact", fact)
+            result = save_memory(
+    "fact",
+    fact,
+    persistent_memories,
+    save_memories
+)
 
             print("DevMate AI: I'll remember that.")
 
@@ -536,6 +542,7 @@ def main():
         # Forget Memory Command
         # -------------------------
 
+    
         if intent == "forget":
 
             keyword = question[7:].strip()
@@ -546,7 +553,23 @@ def main():
                 )
                 continue
 
-            removed_memories = forget_memory(keyword)
+            removed_memories = forget_memory_tool(
+                keyword,
+                persistent_memories,
+                save_memories
+            )
+
+            if removed_memories:
+                print(
+                    f"DevMate AI: Removed {len(removed_memories)} memory/memories."
+                )
+            else:
+                print(
+                    "DevMate AI: I couldn't find a matching memory."
+                )
+
+            continue
+
 
             if removed_memories:
                 print(
@@ -566,12 +589,11 @@ def main():
         # Memory Command
         # -------------------------
 
+        
         if intent == "memory":
 
-            print(
-                "DevMate AI: Saved memories:",
-                persistent_memories
-            )
+            saved = get_memories(persistent_memories)
+            print("DevMate AI: Saved memories:", saved)
 
             print(
                 f"Session history: "
@@ -580,6 +602,7 @@ def main():
             )
 
             continue
+
 
 
                 # -------------------------
