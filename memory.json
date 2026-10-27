@@ -1,3 +1,16 @@
 {
-  "memories": []
+  "memories": [
+    {
+      "type": "fact",
+      "value": "I am learning Agentic AI"
+    },
+    {
+      "type": "fact",
+      "value": "I am learning Agentic AI"
+    },
+    {
+      "type": "fact",
+      "value": "I am learning Agentic AI"
+    }
+  ]
 }
