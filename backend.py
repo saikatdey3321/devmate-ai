@@ -124,7 +124,7 @@ def save_memories(memories):
 
 
 def normalize_memory(value):
-    """Normalize memory text for duplicate comparisons."""
+    """Normalize text to help identify duplicate memories."""
     value = str(value).strip().lower()
 
     if value.startswith("that "):
@@ -133,39 +133,56 @@ def normalize_memory(value):
     return value
 
 
+def get_memory_summary(memories):
+    """Create a readable summary of saved memories."""
+    if not memories:
+        return "I don't have any saved memories about you yet."
+
+    return "\n".join(
+        f"- [{item.get('type', 'fact')}] {item.get('value', '')}"
+        for item in memories
+    )
+
+
 def get_response(question):
-    """Process a question and return a DevMate AI response."""
+    """Process chat messages and use saved memories when relevant."""
     text = question.strip()
     lowered = text.lower()
     memories = load_memories()
 
-    # Show saved memories
+    # Show all saved memories
     if lowered in {
         "show memories",
         "list memories",
         "what do you remember?",
+        "what do you remember about me?",
+        "what do you know about me?",
     }:
-        if not memories:
-            return "I don't have any saved memories yet."
+        return get_memory_summary(memories)
 
-        return "\n".join(
-            f"- [{item.get('type', 'fact')}] "
-            f"{item.get('value', '')}"
-            for item in memories
+    # Answer personal learning-goal questions using saved memories
+    personal_questions = {
+        "what am i learning?",
+        "what are my learning goals?",
+        "what are my goals?",
+        "what have i told you about myself?",
+    }
+
+    if lowered in personal_questions:
+        if not memories:
+            return "I don't have any saved information about you yet."
+
+        return (
+            "Based on my saved memories, here's what I know:\n\n"
+            + get_memory_summary(memories)
         )
 
     # Save a memory
     if lowered.startswith("remember "):
         value = text[len("remember "):].strip()
 
-        if not value:
-            return "Please tell me what you want me to remember."
-
-        value = (
-            value[5:].strip()
-            if value.lower().startswith("that ")
-            else value
-        )
+        if value.lower().startswith("that "):
+            value = value[5:].strip()
 
         if not value:
             return "Please tell me what you want me to remember."
@@ -178,7 +195,7 @@ def get_response(question):
                 and normalize_memory(item.get("value", ""))
                 == normalized_value
             ):
-                return "This memory is already saved."
+                return "I already have that memory saved."
 
         memories.append({
             "type": "fact",
@@ -206,10 +223,9 @@ def get_response(question):
 
         return f"Forgot {len(removed)} matching memory item(s)."
 
-    # Normal chat response
+    # Handle normal questions
     remember("user", text)
     answer = ask_ai(text)
     remember("assistant", answer)
 
     return answer
-
